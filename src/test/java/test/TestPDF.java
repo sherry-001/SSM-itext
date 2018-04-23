@@ -16,6 +16,7 @@ import com.lowagie.text.Font;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 
 public class TestPDF {
@@ -62,7 +63,28 @@ public class TestPDF {
             
             //文字数据
             String str = getString();
+			List<Paragraph> params = PDFUtil.getPars(str, map);
+			for (Paragraph para : params) {
+				document.add(para);
+			}
+			//表格数据  
+            //创建一个有4列的表格
+			PdfPTable table = new PdfPTable(4);
+			//对表格进行控制？？
+			//默认会生成普通cell,特殊cell 要通过PdfPCell 进行设置
+			table.addCell(PDFUtil.getParagraph("发票税率"));
+			table.addCell(PDFUtil.getParagraph("发票编号"));  
+            table.addCell(PDFUtil.getParagraph("发票类型"));  
+            table.addCell(PDFUtil.getParagraph("金额")); 
 			
+			//剩余表格的数据
+            List<String> cells = getTableParams();
+            for (String cell : cells) {
+            	table.addCell(PDFUtil.getParagraph(cell));
+			}
+            document.add(table);
+            document.close();
+            
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
@@ -77,36 +99,18 @@ public class TestPDF {
         return str;  
     } 
 	
-	public static List<Paragraph> getPars(String context ,Map<String,String> map){  
-        int index = 0;  
-        List<Paragraph> list = new ArrayList<Paragraph>();  
-        Paragraph p = getDefaultParagraph(null);  
-        while((index  = context.indexOf(BEGIN)) > -1){  
-            String text = context.substring(0,index);  
-            context = context.substring(index, context.length());  
-            index = context.indexOf(END);  
-            String param =  null;  
-            if(index > 0){  
-                 param = context.substring(BEGIN.length(),index);  
-            }  
-            p.add(text);  
-            if(!NEW_LINE.equals(param)){  
-                Object value = map.get(param);  
-                if(value != null){  
-                    p.add(new Chunk(value.toString(),UNDER_LINE));  
-                }else{  
-                    p.add(new Chunk(param));  
-                }  
-            }else{  
-                list.add(p);  
-                p = getDefaultParagraph(null);  
-                p.setSpacingBefore(0);  
-            }  
-            context = context.substring(index+END.length(),context.length());  
-        }  
-        list.add(p);  
-        list.add(getParagraph(context));  
-        return list;  
-    }  
-
+	public static List<String> getTableParams(){  
+        // 为了方便就按顺序存放  
+        List<String> l = new ArrayList<String>();  
+        l.add("%12");  
+        l.add("T9090990");  
+        l.add("食品类发票");  
+        l.add("1000.0");  
+          
+        l.add("%15");  
+        l.add("Q12023");  
+        l.add("服务类发票");  
+        l.add("9999.0");  
+        return l;  
+    } 
 }
