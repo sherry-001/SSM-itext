@@ -1,0 +1,195 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">菜单管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 100px;">
+						<div class="input-group-btn">
+						
+							<button type="button" 
+							class="btn btn-default btn-delete">删除</button>
+							<button type="button" class="btn btn-default btn-add">添加</button>
+							<button type="button" class="btn btn-default btn-update">修改</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+		<div class="box-body table-responsive no-padding">
+          <table id="menuTable" class="table table-hover">
+        	<thead>
+	        <tr>
+		      <th data-field="selectItem" data-checkbox="true"></th>
+	        </tr>
+	     </thead>
+         </table>
+        </div>
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript" src="bower_components/treegrid/jquery.treegrid.extension.js"></script>
+<script type="text/javascript" src="bower_components/treegrid/jquery.treegrid.min.js"></script>
+<script type="text/javascript" src="bower_components/treegrid/tree.table.js"></script>
+<script type="text/javascript">
+/**
+ * 初始化表格的列
+ */
+var columns = [
+{
+	field : 'selectItem',
+	radio : true
+},
+{
+	title : '菜单ID',
+	field : 'id',
+	visible : false,
+	align : 'center',
+	valign : 'middle',
+	width : '80px'
+},
+{
+	title : '菜单名称',
+	field : 'name',
+	align : 'center',
+	valign : 'middle',
+	sortable : true,
+	width : '130px'
+},
+{
+	title : '上级菜单',
+	field : 'parentName',
+	align : 'center',
+	valign : 'middle',
+	sortable : true,
+	width : '100px'
+},
+{
+	title : '类型',
+	field : 'type',
+	align : 'center',
+	valign : 'middle',
+	sortable : true,
+	width : '70px',
+	formatter : function(item, index) {
+		if (item.type == 1) {
+			return '<span class="label label-success">菜单</span>';
+		}
+		if (item.type == 2) {
+			return '<span class="label label-warning">按钮</span>';
+		}
+	}
+}, 
+{
+	title : '排序号',
+	field : 'sort',
+	align : 'center',
+	valign : 'middle',
+	sortable : true,
+	width : '70px'
+}, 
+{
+	title : '菜单URL',
+	field : 'url',
+	align : 'center',
+	valign : 'middle',
+	sortable : true,
+	width : '160px'
+}, 
+{
+	title : '授权标识',
+	field : 'permission',
+	align : 'center',
+	valign : 'middle',
+	sortable : true
+} ];
+
+	$(function(){
+		doGetObject();
+		$(".input-group-btn")
+		.on("click",".btn-delete",doDeleteObject)
+		.on("click",".btn-add,.btn-update",doLoadEditUI)
+		
+		//将选中的数据放入绑定到容器上,不能绑定所有的信息,因为用的是插件,没办法找到对应的值绑定???
+	/* 	 $(".container-fluid").data("menuId",getCheckedId()); 
+		应该先根据取得的id值判断是否需要跳转页面 ,详细判断请查看doLoadEditUI()方法*/
+	})
+
+	function doLoadEditUI(){
+		var title;
+		var flag=true;
+		if($(this).hasClass("btn-add")){
+			title="添加菜单";
+		}else{
+			title="修改菜单";
+			var checkedId = getCheckedId();
+			if(!checkedId){
+				alert("请先选择一个菜单");
+				return;
+			}
+			$.ajax({
+				url:"menu/findObjectById.do",
+				data:{"id":checkedId},
+				dataType:"json",
+				async:false,
+				success:function(result){
+					if(result.state==1){
+						alert(result.message);
+						 $(".container-fluid").data("data",result.data);
+					}else{
+						alert(result.message);
+						flag=false; //如果获取信息失败,则不跳转页面,设置一个flag进行判断
+					}
+				}
+			})
+		}
+		if(!flag) return false; //flag为false时不执行下面的跳转页面
+		var url="menu/editUI.do";
+		 $(".container-fluid").load(url,function(){
+			 $(".box-title").html(title);
+		 })
+	}
+	
+	function getCheckedId(){
+		//bootstrapTreeTable是treeGrid插件内部定义的jquery扩展函数
+		//getSelections为扩展函数内部要调用的一个方法
+
+		var selections = $("#menuTable").bootstrapTreeTable("getSelections");
+		if(selections.length==1){
+			console.log(selections[0]); //显示在控制台的对象只有一个id属性值
+			return selections[0].id;
+		}
+	}
+	
+	function doDeleteObject(){
+		// 获取选中的菜单id
+		var id = getCheckedId();
+		if(!id){
+			alert("请选择一个");
+			return;
+		}
+		//基于id执行异步删除
+		var url ="menu/doDeleteObject.do";
+		var params={"id":id};
+		$.post(url,params,function(result){
+			if(result.state==1){
+				alert(result.message);
+				doGetObject();
+			}else{
+				alert(result.message);
+			}
+		});
+	}
+	
+	function doGetObject(){
+		var url = "menu/doFindObject.do"
+		var treeTable = new TreeTable(
+				"menuTable", //底层会添加#号
+				url, //底层传递给了ajax函数的url
+				columns); //规定了固定的格式
+		treeTable.init();
+	}
+
+</script>

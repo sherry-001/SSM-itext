@@ -1,0 +1,199 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">用户管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="用户名">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" class="btn btn-default btn-add">添加</button>
+							<button type="button" class="btn btn-default btn-update">修改</button>
+							<button type="button" class="btn btn-default btn-download">下载</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>单选</th>
+							<th>ID</th>
+							<th>用户名</th>
+							<th>邮箱</th>
+							<th>手机号</th>
+							<th>状态</th>
+							<th>创建时间</th>
+							<th>修改时间</th>
+							<th>操作</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId"></tbody>
+				</table>
+			</div>
+			<div id="pageId" class="box-footer clearfix">
+			</div>
+			<!-- /.box-body -->
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+	
+	  	$("#pageId").load("pageUI.do",function(){
+	  		doGetObjects();
+	  	});
+	  	$(".input-group-btn")
+	  	.on("click",".btn-search",doQueryObjects)
+	  	.on("click",".btn-add",doAddObject)
+	  	.on("click",".btn-update",doUpdateObject)
+	  	.on("click",".btn-download",doDownloadObject)
+	  	
+	  	$("#tbodyId").on("click",".btn-valid",doValidate);
+	})
+	
+	function doDownloadObject(){
+		$.ajax({
+			url:"user/doDownload.do",
+			success:function(result){
+				if(result.state==1){
+					alert(result.message)
+					document.location.href=getRootPath()+"/user/export.do";
+					alert("导出成功");
+				}else{
+					alert(result.message)
+				}
+			}
+		})
+	}
+	
+	function getRootPath(){  
+	   
+	    //获取主机地址之后的目录，如： proj/meun.jsp  
+	    var pathName = window.document.location.pathname;  
+	    //获取带"/"的项目名，如：/proj  
+	    var projectName = pathName.substring(0, pathName.substr(1).indexOf('/')+1);  
+	    return projectName;  
+	}
+	
+	function doUpdateObject(){
+		$("#tbodyId input[type='radio']").each(function(){
+			if($(this).prop("checked")){
+				
+			}
+		})
+		
+		doAddObject();
+	}
+	
+	function doAddObject(){
+		var title;
+		if($(this).hasClass("btn-add")){
+			title="添加用户";
+		}else{
+			title="修改用户";
+		}
+		$(".container-fluid").load("user/editUI.do",function(){
+			$(".box-title").html(title);
+		});
+		
+	}
+	
+	function doValidate(){
+		
+		var user =$(this).parents("tr").data("user");
+		var id =user.id;
+		var valid=user.valid?0:1;
+		var modifiedUser="admin";
+		console.log(valid);
+		var url ="user/doValidById.do";
+		var params={
+				"id":id,
+				"valid":valid,
+				"modifiedUser":modifiedUser
+		}
+		//取得一行的对象
+		var btn = $(this);
+		$.post(url,params,function(result){
+			if(result.state==1){
+				alert(result.message);
+			//	doGetObjects();//数据刷新
+				//局部数据刷新
+				doEditRow(btn,valid);
+			}else{
+				alert(result.message);
+			}
+		});
+	}
+	/**修改*/
+	function doEditRow(btn,valid){
+		btn.html(valid?"禁用":"启用");
+		var tr = btn.parents("tr");
+		tr.find("td:eq(5)").html(valid?"启用":"禁用");
+		//需要重新绑定数据,否则第二次发生权限更新时不变化
+		var user = tr.data("user");
+		user.valid=valid;
+		tr.data("user",user);
+		
+	}
+	
+	function doQueryObjects(){
+		$("#pageId").data("pageCurrent",1);
+		doGetObjects();
+	}
+	
+  	/**异步加载用户列表数据*/
+  	function doGetObjects(){
+  		var pageCurrent = $("#pageId").data("pageCurrent");
+  		if(!pageCurrent)pageCurrent=1;
+  		var url="user/doFindPageObjects.do";
+  		var params={"pageCurrent":pageCurrent};
+  		var username=$("#searchNameId").val();
+  		params["username"]=username;
+  		$.getJSON(url,params,function(result){
+  			if(result.state==1){
+  				//显示当前页面的用户信息
+  				setTableBodyRows(result.data.records);
+  				console.log(result.data.records);
+  				//显示当前页面的分页信息
+  				setPagination(result.data);
+  			}else{
+  				alert(result.message);
+  			}
+  		})
+  	}
+  	
+  	function setTableBodyRows(data){
+  		console.log(data);
+  		var tBody=$("#tbodyId");
+  		tBody.empty();
+  		for(var i in data){
+  			var tr =$("<tr></tr>");
+  			tr.data("user",data[i]);
+  			var tds="<td><input type='radio' value='"+data[i]+"'/></td>"+
+  					"<td>"+data[i].id+"</td>"+
+  					"<td>"+data[i].username+"</td>"+
+  					"<td>"+data[i].email+"</td>"+
+  					"<td>"+data[i].mobile+"</td>"+
+  					"<td>"+(data[i].valid?'启用':'禁用')+"</td>"+
+  					"<td>"+data[i].createdTime+"</td>"+
+  					"<td>"+data[i].modifiedTime+"</td>"+
+  					"<td><button type='button' class='btn btn-default btn-valid'>"+(data[i].valid?'禁用':'启用')+"</button></td>";
+  			tr.append(tds);
+  			tBody.append(tr);
+  		}
+  	}
+</script>
+
+
+
+

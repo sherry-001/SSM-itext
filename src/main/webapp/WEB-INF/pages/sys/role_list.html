@@ -1,0 +1,198 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">角色管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="角色名">
+						
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" 
+							class="btn btn-default btn-delete">删除</button>
+							<button type="button" class="btn btn-default btn-add">添加</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<form>
+				  <table class="table table-hover">
+					<thead id="theadId">
+						<tr>
+							<th><input type="checkbox" id="checkAll">全选</th>
+							<th>id</th>
+							<th>name</th>
+							<th>create date</th>
+							<th>modified date</th>
+							<th>operator</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId">
+					</tbody>
+				  </table>
+				</form>
+			</div>
+			<!-- /.box-body -->
+			<div id="pageId" class="box-footer clearfix">
+			 
+            </div>
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script ></script>
+<script type="text/javascript">
+	$(function(){
+		$("#pageId").load("pageUI.do",function(){
+			doGetObjects();
+		})
+		//状态发生变化时,可以使用change事件
+		$("#theadId").on("change","#checkAll",function(){
+			doCheckAll($(this).prop("checked"));
+		});
+		
+		$("#tbodyId").on("change",".chkcls",checkedItemChange)
+		.on("click",".btn-delete",doLoadEditUI)
+		
+		
+		$(".input-group-btn")
+		.on("click",".btn-search",doQueryObject)
+		.on("click",".btn-delete",doDeleteObject)
+		.on("click",".btn-add",doLoadEditUI)
+	});
+		/**异步加载编辑页面:添加和修改公用一个页面*/
+		function doLoadEditUI(){
+			var title;
+			//区分是添加角色还是修改角色
+			if($(this).hasClass("btn-add")){
+				title="添加角色";
+			}else{
+				title="修改角色";
+				//获取当前行的数据
+				var data = $(this).parents("tr").data("data");
+				//绑定到外层容器,方面其他页面取数
+				$(".container-fluid").data("data",data);
+			}
+			var url ="role/editUI.do";
+			$(".container-fluid").load(url,function(){
+				$(".box-title").html(title);
+			});
+		}
+	
+		function checkedItemChange(){
+			var flag=true;
+			$("#tbodyId input[type='checkbox']").each(function(){
+				flag=flag&$(this).prop("checked");
+			});
+			$("#checkAll").prop("checked",flag);
+		}
+		
+		function doCheckAll(state){
+			$("#tbodyId input[type='checkbox']").prop("checked",state);
+			/* .each(function(){
+				$(this).prop("checked",state)
+			}) */
+		}
+	
+		function doDeleteObject(){
+			//获取用户选中的id
+			var ids = getCheckedIds();
+			//对选中的id值进行判定
+			if(ids.length!=1){
+				alert("请选择一个")
+				return;
+			};
+			//异步提交数据,执行删除操作
+			var url = "role/doDeleteObject.do";
+			var params={id:ids[0]};
+			$.post(url,params,function(result){
+				if(result.state==1){
+					alert(result.message);
+					doGetObjects();
+				}else{
+					alert(result.message);
+				}
+			});
+		}
+		
+		function getCheckedIds(){
+			//获取tbody所有复选框对象
+			//迭代所有checkbox对象,并检测哪些对象是选中的
+			//将选中对象添加到数组中
+			var array=[];
+			$("#tbodyId input[type='checkbox']").each(function(){
+				if($(this).prop("checked")){
+					array.push($(this).val());
+				}
+			});
+			return array;
+		}
+		
+		function doQueryObject(){
+			//初始化pageCurrent的值
+			$("#pageId").data("pageCurrent",1);
+			doGetObjects();
+		}
+		/* 核心业务:发起异步请求,通过返回结果刷新页面 */
+		function doGetObjects(){
+		
+			var pageCurrent=$("#pageId").data("pageCurrent");
+			if(!pageCurrent)pageCurrent=1;
+			var url="role/doFindPageObjets.do"
+			var params = {"pageCurrent":pageCurrent};
+			var name=$("#searchNameId").val();
+			params.name = name;
+		$.ajax({
+			// 点击左侧时pageCurrent的值为null,因此需要附上一个初始值
+			url:url,
+			data:params,
+			success:function(result){ //服务端返回的结果
+				if(result.state==1){
+				console.log(result);
+				var records = result.data.records;
+					doInsertRows(records);
+				}else{
+					//alert(result.message);// 这个返回的数据是哪里来的
+					$("#tbodyId").html(result.message);
+				}
+				setPagination(result.data); 
+			}
+		});	
+	}
+	
+	function doInsertRows(records){
+			var tBody = $("#tbodyId");
+			tBody.empty();
+			for(var i in records){
+			var tr = $("<tr></tr>");
+			tr.data("id",records[i].id);
+			tr.data("data",records[i]);
+			var tds="<td><input type='checkbox' class='chkcls' name='checkItem' value='"+records[i].id+"'/></td>"+
+					"<td>"+records[i].id+"</td>"+
+					"<td>"+records[i].name+"</td>"+
+					"<td>"+records[i].createdTime+"</td>"+
+					"<td>"+records[i].modifiedTime+"</td>"+
+					"<td><button type='button' class='btn btn-delete'>update</button></td>";
+			tr.append(tds); 
+			tBody.append(tr);
+			} 
+		}
+	
+	
+</script>
+
+
+
+
+
+
+
+
+
