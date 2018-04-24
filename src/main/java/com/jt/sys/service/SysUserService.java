@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.poi.ss.usermodel.Workbook;
+import org.springframework.web.servlet.View;
 
 import com.jt.common.vo.PageObject;
 import com.jt.sys.entity.SysUser;
@@ -28,4 +29,6 @@ public interface SysUserService {
 	void login(String username,String password);
 	
 	Workbook  findObjects() throws Exception;
+	
+	View findObjectsPdf() throws Exception;
 }

@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.View;
 
 import com.jt.common.vo.JsonResult;
 import com.jt.common.vo.PageObject;
@@ -62,13 +64,30 @@ public class SysUserController {
 	
 	@RequestMapping("/export")
 	@ResponseBody
-	public JsonResult doExportUser(HttpServletResponse response) throws Exception{
+	public JsonResult doExportUser(HttpServletResponse response,String fileName) throws Exception{
+		System.out.println(fileName);
 		response.setContentType("application/binary;charset=UTF-8");
-		String fileName="userInfo"+new String(new SimpleDateFormat("yyyy/MM/dd hh:mm:ss").format(new Date()).getBytes(), "utf-8");
-		response.setHeader("Content-disposition", "attachment; filename=" + fileName + ".xlsx");
+		/*String fileName="userInfo"+new String(
+				new SimpleDateFormat("yyyy/MM/dd hh:mm:ss").format(
+						new Date()).getBytes(), "utf-8");*/
+		response.setHeader("Content-disposition", "attachment; filename=" + 
+						new String(fileName.getBytes("utf-8"),"iso-8859-1") + ".xlsx");
 		ServletOutputStream out = response.getOutputStream();
 		Workbook workbook = service.findObjects();
 	    workbook.write(out);
 	    return new JsonResult("export success");
+	}
+	
+	@RequestMapping("/exportPDF")
+	@ResponseBody
+	public ModelAndView doExportPdfUser(HttpServletResponse response,String fileName)throws Exception{
+		/*String fileName="userInfo"+new String(
+				new SimpleDateFormat("yyyy/MM/dd hh:mm:ss").format(
+						new Date()).getBytes(), "utf-8");*/
+		response.setHeader("Content-disposition", "attachment; filename=" + 
+						new String(fileName.getBytes("utf-8"),"iso-8859-1") + ".pdf");
+		View view = service.findObjectsPdf();
+		ModelAndView mv = new ModelAndView(view);
+		return mv;
 	}
 }

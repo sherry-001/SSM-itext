@@ -82,7 +82,7 @@ public class TestPDF {
             for (String cell : cells) {
             	table.addCell(PDFUtil.getParagraph(cell));
 			}
-            document.add(table);
+            document.add(table);	
             document.close();
             
 		} catch (Exception e) {
